@@ -107,19 +107,19 @@ exports.getOneUserInfo = (req, res) => {
     });
 };
 
-exports.getOneUserById = (req,res)=>{
-    let  { id }  = req.params;
+exports.getOneUserById = (req, res) => {
+    let { id } = req.params;
 
     var query = "SELECT user_id,name,email,auth_provider FROM users WHERE user_id=?";
 
-    connection.query( query, [ id ], (err, results)=>{
-        if( !err ){
-            if( results.length <= 0 ){
-               return res.status(400).json({ message : 'Id does not found!'});
-            }else{
-              return res.status(200).json(results);
+    connection.query(query, [id], (err, results) => {
+        if (!err) {
+            if (results.length <= 0) {
+                return res.status(400).json({ message: 'Id does not found!' });
+            } else {
+                return res.status(200).json(results);
             }
-        }else{
+        } else {
             return res.status(500).json(err)
         }
     });
@@ -128,10 +128,10 @@ exports.getOneUserById = (req,res)=>{
 
 exports.updateRole = (req, res) => {
 
-    let {  role,user_id } = req.body ;
+    let { role, user_id } = req.body;
 
     var query = "UPDATE users SET role=? WHERE user_id=?";
-    connection.query(query, [ role,user_id ], (err, results) => {
+    connection.query(query, [role, user_id], (err, results) => {
         if (!err) {
             if (results.affectedRows > 0) {
                 return res.status(200).json({ message: 'Role updated successfully' })
@@ -172,7 +172,7 @@ exports.changePassword = (req, res) => {
 };
 
 exports.deleteAll = (req, res) => {
-    
+
     connection.query("DELETE FROM users", (err, results) => {
         if (!err) {
             return res.status(200).json({ message: "deleted" });
@@ -199,116 +199,109 @@ const OAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     "https://developers.google.com/oauthplayground" // Redirect URL
-  );
+);
 
-  OAuth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
+OAuth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
 
-  async function sendEmail(to, subject, text) {
+async function sendEmail(to, subject, text) {
     try {
-      const accessToken = await OAuth2Client.getAccessToken();
-      
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          type: "OAuth2",
-          user: process.env.EMAIL_USER,
-          clientId: process.env.CLIENT_ID,
-          clientSecret: process.env.CLIENT_SECRET,
-          refreshToken: process.env.REFRESH_TOKEN,
-          accessToken: accessToken.token,
-        },
-      });
-  
-      const mailOptions = {
-        from: `"Audio Book" <${process.env.EMAIL_USER}>`,
-        to,
-        subject,
-        text,
-      };
-  
-      const result = await transporter.sendMail(mailOptions);
-      console.log("Email sent:", result);
-      return result;
+        const accessToken = await OAuth2Client.getAccessToken();
+
+        if (!accessToken) {
+            console.error("Failed to get access token. Refreshing token...");
+            await OAuth2Client.refreshAccessToken();
+        }
+
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                type: "OAuth2",
+                user: process.env.EMAIL_USER,
+                clientId: process.env.CLIENT_ID,
+                clientSecret: process.env.CLIENT_SECRET,
+                refreshToken: process.env.REFRESH_TOKEN,
+                accessToken: accessToken.token,
+            },
+        });
+
+        const mailOptions = {
+            from: `"Audio Book" <${process.env.EMAIL_USER}>`,
+            to,
+            subject,
+            text,
+        };
+
+        const result = await transporter.sendMail(mailOptions);
+        console.log("Email sent:", result);
+        return result;
     } catch (error) {
-      console.error("Error sending email:", error);
+        console.error("Error sending email:", error);
+        throw error;
     }
-  };
+};
 
-// const transporter = nodemailer.createTransport({
-//     service: 'gmail',
-//     auth: {
-//         type: 'OAuth2',
-//         user: 'heinkokoaungmgk1998@gmail.com', // Your Gmail address
-//         clientId: process.env.GOOGLE_CLIENT_ID,
-//         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-//         refreshToken: '1//04FDiIlfNxswLCgYIARAAGAQSNwF-L9IrPanPzKifMzdbVMCV0KbYg2qiVjwJo-OOCPAp9pXBVxRdC2DN3dzDeX6CasvumS9aQj4',
-//         accessToken: 'ya29.a0AXeO80QgUXX5Z-d53buN-q2iAILNemLDhUhyjUztnJ_9zoYlS6--0jUWAQVJzwxhhsC3D1745FCK-dd61EHC0V0D5P8ir804rdWSUzAKIlAcIwCrCG_pimSzrscXZGLRk3Azsg6L6tSty_GTQWSPWOcaQA5ta3dK98W9yaFCaCgYKAbwSARESFQHGX2MislzTuF0TSLK85Oar-Ew6gg0175', // Optional, if you have it
-//     },
-// });
-
-exports.forgotPassword =  (req, res) => {
+exports.forgotPassword = (req, res) => {
     const { email } = req.body;
     const resetToken = uuidv4();
     const expiryTime = new Date(Date.now() + 3600000); // 1 hour
-  
+
     connection.query("SELECT * FROM users WHERE email = ?", [email], (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (result.length === 0) return res.status(404).json({ message: "User not found" });
-  
-      connection.query(
-        "UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?",
-        [resetToken, expiryTime, email],
-        async (err) => {
-          if (err) return res.status(500).json({ error: err.message });
-  
-          const resetLink = `http://localhost:8080/users/reset-password/${resetToken}`;
-        //   const mailOptions = {
-        //     from: 'heinkokoaungmgk1998@gmail.com',
-        //     to: email,
-        //     subject: "Password Reset",
-        //     text: `Click here to reset your password: ${resetLink}`,
-        //   };
-  
-          try {
-            // await transporter.sendMail(mailOptions);
-            sendEmail(email,"Password Reset",`Click here to reset your password: ${resetLink}`)
-            res.json({ message: "Password reset email sent" });
-          } catch (mailErr) {
-            res.status(500).json({ error: mailErr });
-          }
-        }
-      );
+        if (err) return res.status(500).json({ error: err.message });
+        if (result.length === 0) return res.status(404).json({ message: "User not found" });
+
+        connection.query(
+            "UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?",
+            [resetToken, expiryTime, email],
+            async (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+
+                const resetLink = `http://localhost:8080/users/reset-password/${resetToken}`;
+
+
+                
+                try {
+                    // await transporter.sendMail(mailOptions);
+                   await sendEmail(email,"Password Reset",`Click here to reset your password: ${resetLink}`)
+                    res.json({ message: "Password reset email sent" });
+                  } catch (mailErr) {
+                    res.status(500).json({ error: mailErr });
+                  }
+
+
+
+            }
+        );
     });
-  };
-  
-  // Handle Password Reset
-  exports.resetPassword =  (req, res) => {
-    
+};
+
+// Handle Password Reset
+exports.resetPassword = (req, res) => {
+
     const { token } = req.params;
     const { newPassword } = req.body;
-  
-    connection.query("SELECT * FROM users WHERE reset_token = ?", [token], async (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (result.length === 0) return res.status(400).json({ message: "Invalid or expired token" });
-     
-      const user = result[0];
-      if (new Date(user.reset_token_expiry) < new Date()) {
-        return res.status(400).json({ message: "Token expired" });
-      }
-  
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      connection.query(
-        "UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = ?",
-        [hashedPassword, user.user_id],
-        (updateErr) => {
-          if (updateErr) return res.status(500).json({ error: updateErr.message });
-          res.json({ message: "Password updated successfully" });
-        }
-      );
-    });
-  };
 
-  exports.renderResetPasswordForm = (req, res) => {
+    connection.query("SELECT * FROM users WHERE reset_token = ?", [token], async (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (result.length === 0) return res.status(400).json({ message: "Invalid or expired token" });
+
+        const user = result[0];
+        if (new Date(user.reset_token_expiry) < new Date()) {
+            return res.status(400).json({ message: "Token expired" });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        connection.query(
+            "UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = ?",
+            [hashedPassword, user.user_id],
+            (updateErr) => {
+                if (updateErr) return res.status(500).json({ error: updateErr.message });
+                res.json({ message: "Password updated successfully" });
+            }
+        );
+    });
+};
+
+exports.renderResetPasswordForm = (req, res) => {
     const { token } = req.params;
 
     // Check if the token is valid and not expired
@@ -321,10 +314,10 @@ exports.forgotPassword =  (req, res) => {
 
             const user = result[0];
             if (new Date(user.reset_token_expiry) < new Date()) {
-              return res.status(400).send("<h2>Token expired</h2>");
+                return res.status(400).send("<h2>Token expired</h2>");
             }
             // Render an HTML form for resetting the password
-             res.send(`
+            res.send(`
       <html>
         <head>
           <title>Reset Password</title>

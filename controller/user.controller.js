@@ -198,7 +198,7 @@ exports.deleteById = (req, res) => {
 const OAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    "https://developers.google.com/oauthplayground" // Redirect URL
+    "https://developers.google.com/oauthplayground"
 );
 
 OAuth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
@@ -256,25 +256,19 @@ exports.forgotPassword = (req, res) => {
                 if (err) return res.status(500).json({ error: err.message });
 
                 const resetLink = `http://localhost:8080/users/reset-password/${resetToken}`;
-
-
                 
                 try {
-                    // await transporter.sendMail(mailOptions);
                    await sendEmail(email,"Password Reset",`Click here to reset your password: ${resetLink}`)
                     res.json({ message: "Password reset email sent" });
                   } catch (mailErr) {
                     res.status(500).json({ error: mailErr });
                   }
-
-
-
             }
         );
     });
 };
 
-// Handle Password Reset
+
 exports.resetPassword = (req, res) => {
 
     const { token } = req.params;
@@ -316,7 +310,6 @@ exports.renderResetPasswordForm = (req, res) => {
             if (new Date(user.reset_token_expiry) < new Date()) {
                 return res.status(400).send("<h2>Token expired</h2>");
             }
-            // Render an HTML form for resetting the password
             res.send(`
       <html>
         <head>

@@ -19,9 +19,6 @@ connection.connect((err)=>{
     
 });
 
-
-// const connection = require('./connection');
-
 const createTables = `
 CREATE TABLE IF NOT EXISTS Users (
     user_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -75,8 +72,6 @@ CREATE TABLE IF NOT EXISTS UserActivity (
     last_active_time DATETIME NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
 );
-
-
 `;
 
 connection.query(createTables, (err, results) => {
@@ -87,6 +82,5 @@ connection.query(createTables, (err, results) => {
     }
     // process.exit();
 });
-
 
 module.exports = connection;

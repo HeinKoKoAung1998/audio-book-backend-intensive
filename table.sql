@@ -5,6 +5,8 @@ CREATE TABLE Users(
     password VARCHAR(255),
     role ENUM('Admin', 'User') DEFAULT 'User' NOT NULL,
     auth_provider ENUM('X', 'Google', 'Facebook', 'Email') NOT NULL
+    reset_token VARCHAR(255),
+    reset_token_expiry DATETIME 
 );
 
 CREATE TABLE Books ( 
@@ -50,8 +52,6 @@ ALTER TABLE Favorites add FOREIGN KEY (audio_id) REFERENCES AudioFiles(audio_id)
 
 ALTER TABLE ListeningHistory ADD FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE;
 ALTER TABLE ListeningHistory ADD FOREIGN KEY (audio_id) REFERENCES AudioFiles(audio_id) ON DELETE CASCADE;
-
-insert into users(name, email, password, role, auth_provider) values('admin', 'admin@gmail.com','123456','Admin','Email');
 
 ALTER TABLE UserActivity ADD FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE;
 

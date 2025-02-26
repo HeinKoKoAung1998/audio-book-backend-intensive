@@ -33,8 +33,6 @@ cron.schedule('*/5 * * * *', () => {
 });
 
 
-
-
 const limiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutes
 	limit: 200, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
